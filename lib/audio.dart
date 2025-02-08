@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -23,10 +25,10 @@ class AudioPlayerPro extends StatefulWidget {
   final String name;
 
   @override
-  _AudioPlayerProSetup createState() => _AudioPlayerProSetup();
+  AudioPlayerProSetup createState() => AudioPlayerProSetup();
 }
 
-class _AudioPlayerProSetup extends State<AudioPlayerPro> {
+class AudioPlayerProSetup extends State<AudioPlayerPro> {
   final Data data = Get.find<Data>();
   Notify notify = Get.find();
 
@@ -37,6 +39,10 @@ class _AudioPlayerProSetup extends State<AudioPlayerPro> {
   Duration _duration = const Duration();
   Duration _position = const Duration();
   static AudioPlayer advancedPlayer = AudioPlayer();
+
+  StreamSubscription? durationSubscription;
+  StreamSubscription? positionSubscription;
+  StreamSubscription? playerStateSubscription;
 
   String song1Name = 'Daadario classical';
 
@@ -49,11 +55,60 @@ class _AudioPlayerProSetup extends State<AudioPlayerPro> {
   @override
   void initState() {
     super.initState();
+    setupAudioPlayer();
     initPlayer();
+  }
+
+  void setupAudioPlayer() {
+    advancedPlayer.setReleaseMode(ReleaseMode.stop);
+
+    durationSubscription = advancedPlayer.onDurationChanged.listen((d) {
+      if (mounted) setState(() => _duration = d);
+    });
+
+    positionSubscription = advancedPlayer.onPositionChanged.listen((p) {
+      if (mounted) setState(() => _position = p);
+    });
+
+    playerStateSubscription =
+        advancedPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        notify.isIconPlay.value = state == PlayerState.playing;
+      }
+    });
+  }
+
+  Future<void> handlePlayPause() async {
+    if (!mounted) return;
+
+    try {
+      if (notify.isIconPlay.value) {
+        await advancedPlayer.pause();
+        notify.setIconPlay(false);
+      } else {
+        if (advancedPlayer.state == PlayerState.paused) {
+          await advancedPlayer.resume();
+        } else {
+          await advancedPlayer.play(UrlSource(widget.audioURL));
+        }
+        notify.setIconPlay(true);
+      }
+    } catch (e) {
+      print('Error handling play/pause: $e');
+    }
+  }
+
+  void seekToSecond(int second) {
+    Duration newDuration = Duration(seconds: second);
+    advancedPlayer.seek(newDuration);
   }
 
   @override
   void dispose() {
+    durationSubscription?.cancel();
+    positionSubscription?.cancel();
+    playerStateSubscription?.cancel();
+    advancedPlayer.dispose();
     super.dispose();
   }
 
@@ -155,11 +210,6 @@ class _AudioPlayerProSetup extends State<AudioPlayerPro> {
         showMusicNotification();
       },
     );
-  }
-
-  void seekToSecond(int second) {
-    Duration newDuration = Duration(seconds: second);
-    advancedPlayer.seek(newDuration);
   }
 
   double setChanged() {

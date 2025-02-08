@@ -81,7 +81,7 @@ class HomePage extends StatelessWidget {
             ],
           ),
         ),
-        bottomNavigationBar: BottomBar(0),
+        bottomNavigationBar: const BottomBar(0),
       ),
     );
   }

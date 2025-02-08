@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../audio.dart';
+
 class ArtistsSection extends StatelessWidget {
   final List<Map<String, dynamic>> artists;
 
@@ -218,14 +220,15 @@ class ArtistDetailScreen extends StatelessWidget {
                       onPressed: () {},
                     ),
                     onTap: () {
-                      Navigator.pushNamed(
+                      Navigator.push(
                         context,
-                        '/audioplayer',
-                        arguments: {
-                          'audioURL': song['audio'],
-                          'image': song['image'],
-                          'name': song['name'],
-                        },
+                        MaterialPageRoute(
+                          builder: (context) => AudioPlayerPro(
+                            audioURL: song['audio'],
+                            image: song['image'],
+                            name: song['name'],
+                          ),
+                        ),
                       );
                     },
                   );

@@ -1,7 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:get/get.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter/material.dart';
 
 class Notify extends GetxController {
   final isIconPlay = false.obs;
@@ -13,12 +12,11 @@ class Notify extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    initializeNotifications();
     setupAudioPlayer();
   }
 
   void setupAudioPlayer() {
-    audioPlayer.setReleaseMode(ReleaseMode.stop); // Changed from loop to stop
+    audioPlayer.setReleaseMode(ReleaseMode.stop);
 
     audioPlayer.onPlayerStateChanged.listen((PlayerState state) {
       isIconPlay.value = state == PlayerState.playing;
@@ -28,42 +26,6 @@ class Notify extends GetxController {
     });
   }
 
-  Future<void> initializeNotifications() async {
-    await AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: 'music_playback',
-          channelName: 'Music Playback',
-          channelDescription: 'Music playback controls',
-          defaultColor: const Color(0xFF1DB954), // Spotify green color
-          ledColor: Colors.white,
-          importance: NotificationImportance.High,
-          playSound: false,
-          enableVibration: false,
-          locked: true, // Makes notification persistent
-        ),
-      ],
-      debug: true,
-    );
-
-    // Request notification permissions
-    await AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
-      if (!isAllowed) {
-        AwesomeNotifications().requestPermissionToSendNotifications();
-      }
-    });
-
-    // Set up notification action listeners
-    AwesomeNotifications().setListeners(
-      onActionReceivedMethod: onActionReceivedMethod,
-      onNotificationCreatedMethod: onNotificationCreatedMethod,
-      onNotificationDisplayedMethod: onNotificationDisplayedMethod,
-      onDismissActionReceivedMethod: onDismissActionReceivedMethod,
-    );
-  }
-
-  // Handle notification actions
   @pragma('vm:entry-point')
   static Future<void> onActionReceivedMethod(
       ReceivedAction receivedAction) async {
@@ -71,36 +33,41 @@ class Notify extends GetxController {
 
     switch (receivedAction.buttonKeyPressed) {
       case 'PLAY':
+        await notify.audioPlayer.resume();
         notify.setIconPlay(true);
-        notify.showMusicNotification();
         break;
       case 'PAUSE':
+        await notify.audioPlayer.pause();
         notify.setIconPlay(false);
-        notify.showMusicNotification();
         break;
       case 'STOP':
+        await notify.audioPlayer.stop();
         notify.setIconPlay(false);
         await AwesomeNotifications().dismiss(1);
+        break;
+      case 'PREVIOUS':
+        // Handle previous track
+        break;
+      case 'NEXT':
+        // Handle next track
         break;
     }
   }
 
   @pragma('vm:entry-point')
   static Future<void> onNotificationCreatedMethod(
-      ReceivedNotification receivedNotification) async {
-    // Notification created
-  }
+      ReceivedNotification receivedNotification) async {}
 
   @pragma('vm:entry-point')
   static Future<void> onNotificationDisplayedMethod(
-      ReceivedNotification receivedNotification) async {
-    // Notification displayed
-  }
+      ReceivedNotification receivedNotification) async {}
 
   @pragma('vm:entry-point')
   static Future<void> onDismissActionReceivedMethod(
       ReceivedAction receivedAction) async {
-    // Notification dismissed
+    final notify = Get.find<Notify>();
+    await notify.audioPlayer.stop();
+    notify.setIconPlay(false);
   }
 
   void setIconPlay(bool value) {
@@ -134,11 +101,24 @@ class Notify extends GetxController {
         displayOnForeground: true,
         notificationLayout: NotificationLayout.MediaPlayer,
         autoDismissible: false,
+        largeIcon: currentSongImage.value,
       ),
       actionButtons: [
         NotificationActionButton(
+          key: 'PREVIOUS',
+          label: 'Previous',
+          actionType: ActionType.KeepOnTop,
+          enabled: true,
+        ),
+        NotificationActionButton(
           key: isIconPlay.value ? 'PAUSE' : 'PLAY',
           label: isIconPlay.value ? 'Pause' : 'Play',
+          actionType: ActionType.KeepOnTop,
+          enabled: true,
+        ),
+        NotificationActionButton(
+          key: 'NEXT',
+          label: 'Next',
           actionType: ActionType.KeepOnTop,
           enabled: true,
         ),
@@ -150,5 +130,28 @@ class Notify extends GetxController {
         ),
       ],
     );
+  }
+
+  Future<void> playAudio(String url) async {
+    currentSongUrl.value = url;
+    await audioPlayer.play(UrlSource(url));
+    setIconPlay(true);
+  }
+
+  Future<void> pauseAudio() async {
+    await audioPlayer.pause();
+    setIconPlay(false);
+  }
+
+  Future<void> stopAudio() async {
+    await audioPlayer.stop();
+    setIconPlay(false);
+    await AwesomeNotifications().dismiss(1);
+  }
+
+  @override
+  void onClose() {
+    audioPlayer.dispose();
+    super.onClose();
   }
 }

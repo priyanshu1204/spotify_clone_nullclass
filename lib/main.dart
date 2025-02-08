@@ -15,47 +15,38 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
   ]);
 
-  // AwesomeNotifications().initialize(
-  //   null, // Default icon
-  [
-    //     NotificationChannel(
-    //       channelKey: 'spotify',
-    //       channelName: 'Spotify Notifications',
-    //       channelDescription: 'Notifications for playing/pausing music',
-    //       importance: NotificationImportance.High,
-    //       enableVibration: false,
-    //       channelShowBadge: true,
-    //     ),
-    //   ],
-    // );
-    AwesomeNotifications().initialize(
-      null,
-      [
-        NotificationChannel(
-          channelKey: 'basic',
-          channelName: 'Basic Notifications',
-          channelDescription: 'Basic notifications for audio player actions',
-          importance: NotificationImportance.High,
-          enableVibration: true,
-          playSound: true,
-        ),
-        NotificationChannel(
-          channelKey: 'spotify',
-          channelName: 'Spotify Notifications',
-          channelDescription: 'Notifications for playing/pausing music',
-          importance: NotificationImportance.High,
-          enableVibration: false,
-          channelShowBadge: true,
-        ),
-      ],
-    ),
-  ];
-
-  AwesomeNotifications().setListeners(
-    onActionReceivedMethod: (receivedAction) async {
-      // Handle notification actions globally
-    },
+  await AwesomeNotifications().initialize(
+    null,
+    [
+      NotificationChannel(
+        channelKey: 'music_playback',
+        channelName: 'Music Playback',
+        channelDescription: 'Music playback controls',
+        importance: NotificationImportance.High,
+        enableVibration: false,
+        playSound: false,
+        locked: true,
+      ),
+    ],
   );
+
+  // Add @pragma('vm:entry-point') to ensure the handler works in background
+  @pragma('vm:entry-point')
+  Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
+    if (!receivedAction.payload!.containsKey('notificationId')) {
+      return;
+    }
+    // Handle the action
+  }
+
+  // Register background action handler
+  await AwesomeNotifications().setListeners(
+    onActionReceivedMethod: Notify.onActionReceivedMethod,
+    onNotificationCreatedMethod: Notify.onNotificationCreatedMethod,
+    onNotificationDisplayedMethod: Notify.onNotificationDisplayedMethod,
+    onDismissActionReceivedMethod: Notify.onDismissActionReceivedMethod,
+  );
+
   Get.put(Data());
   Get.put(Notify());
 

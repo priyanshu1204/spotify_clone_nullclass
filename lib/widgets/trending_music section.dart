@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../audio.dart';
 import '../data.dart';
 
 class TrendingMusic extends StatelessWidget {
@@ -193,23 +194,22 @@ class TrendingMusicFullScreen extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(
-                            Icons.more_vert,
-                            color: Colors.white,
-                          ),
+                          icon:
+                              const Icon(Icons.more_vert, color: Colors.white),
                           onPressed: () {},
                         ),
                       ],
                     ),
                     onTap: () {
-                      Navigator.pushNamed(
+                      Navigator.push(
                         context,
-                        '/audioplayer',
-                        arguments: {
-                          'audioURL': song['audio'],
-                          'image': song['image'],
-                          'name': song['name'],
-                        },
+                        MaterialPageRoute(
+                          builder: (context) => AudioPlayerPro(
+                            audioURL: song['audio']!,
+                            image: song['image']!,
+                            name: song['name']!,
+                          ),
+                        ),
                       );
                     },
                   );
